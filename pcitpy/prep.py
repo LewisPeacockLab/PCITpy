@@ -29,14 +29,57 @@ def default_opt():
 
 def setup(data, opt):
 
-    if not opt.has_key('em_iteractions') or opt['em_iterations'] <= 0:
+    if not 'em_iteractions' in opt or opt['em_iterations'] <= 0:
         opt['em_iterations'] = 20
         
-    if not opt.has_key('particles') or opt['particles'] <= 0:
+    if not 'particles' in opt or opt['particles'] <= 0:
         opt['particles'] = 100000
 
-    if not opt.has_key('curve_type') or not opt['curve_type']:
+    if not 'curve_type' in opt or not opt['curve_type']:
         opt['curve_type'] = 'horz_indpnt'
 
     # TODO: Check if the family of curves exist by fetching the
     # number of curve parameters. This is just a sanity check
+
+    if not 'distribution' in opt or not opt['distribution']:
+        if len(np.unique(data['dependent_var'])) == 2:
+            opt['distribution'] = 'bernoulli'
+        else:
+            opt['distribution'] = 'normal'
+
+    if not 'dist_specific_params' in opt or not opt['dist_specific_params']:
+        if opt['distribution'] is 'bernoulli':
+            opt['dist_specific_params'] = {}
+        elif opt['distribution'] is 'normal':
+            dpar = {}
+            dpar['sigma'] = 1
+            opt['dist_specific_params'] = dpar
+        # original code had prompt at this point to check for parameters
+
+    if opt['distribution'] is 'normal' and opt['dist_specific_params']['sigma'] <= 0:
+        raise ValueError('Normal distribution sigma must be greater than 0.')
+
+    if not 'beta_0' in opt:
+        opt['beta_0'] = 0
+
+    if not 'beta_1' in opt:
+        opt['beta_1'] = 1
+
+    if not 'tau' in opt or opt['tau'] <= 0:
+        opt['tau'] = 0.05
+        
+    if not 'bootstrap' in opt:
+        opt['bootstrap'] = False
+    elif not isinstance(opt['bootstrap'], bool):
+        raise ValueError('Bootstrap field must be boolean.')
+
+    if not 'scramble' in opt:
+        opt['scramble'] = False
+    elif not isinstance(opt['scramble'], bool):
+        raise ValueError('Scramble field must be boolean.')
+
+    if opt['bootstrap'] and opt['scramble']:
+        raise ValueError('Cannot run scramble and bootstrap analysis at the same time.')
+    
+    return data, opt
+    
