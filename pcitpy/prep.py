@@ -190,6 +190,10 @@ def setup(data_in, opt):
         opt['zscore_within_subjects'] = 0
     elif not isinstance(opt['zscore_within_subjects'], bool):
         raise ValueError('zscore_within_subjects setting must be boolean.')
-
+    
+    if opt['zscore_within_subjects']:
+        pred = data.loc[:,'predictor_var']
+        data.loc[:,'predictor_var'] = (pred - pred.mean()) / pred.std()
+    
     return data, opt
     
