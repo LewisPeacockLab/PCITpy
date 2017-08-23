@@ -132,15 +132,15 @@ def setup(data_in, opt):
             opt['distribution'] = 'normal'
 
     if not 'dist_specific_params' in opt or not opt['dist_specific_params']:
-        if opt['distribution'] is 'bernoulli':
+        if opt['distribution'] == 'bernoulli':
             opt['dist_specific_params'] = {}
-        elif opt['distribution'] is 'normal':
+        elif opt['distribution'] == 'normal':
             dpar = {}
             dpar['sigma'] = 1
             opt['dist_specific_params'] = dpar
         # original code had prompt at this point to check for parameters
 
-    if opt['distribution'] is 'normal' and opt['dist_specific_params']['sigma'] <= 0:
+    if opt['distribution'] == 'normal' and opt['dist_specific_params']['sigma'] <= 0:
         raise ValueError('Normal distribution sigma must be greater than 0.')
 
     if not 'beta_0' in opt:
