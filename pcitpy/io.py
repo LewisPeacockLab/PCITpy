@@ -1,5 +1,6 @@
 def import_mat_data(file):
     import scipy.io
+    import pandas as pd
     
     mat = scipy.io.loadmat(file)['data']
     data = {}
@@ -9,5 +10,5 @@ def import_mat_data(file):
     data['predictor_var'] = mat[:,3]
     data['dependent_var'] = mat[:,4]
     data['net_effect_clusters'] = mat[:,5]
-    
-    return data
+
+    return pd.DataFrame(data)
