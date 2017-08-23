@@ -106,6 +106,7 @@ def prep_bootstrap(data):
 
 def setup(data, opt):
 
+    # TODO: print warnings if options not defined
     if not 'em_iteractions' in opt or opt['em_iterations'] <= 0:
         opt['em_iterations'] = 20
         
@@ -157,6 +158,24 @@ def setup(data, opt):
 
     if opt['bootstrap'] and opt['scramble']:
         raise ValueError('Cannot run scramble and bootstrap analysis at the same time.')
-    
+
+    # get only categories of interest
+    if not 'category' in opt:
+        opt['category'] = None
+    elif opt['category'] is not None:
+        data = data.loc[np.in1d(data['category'].values, opt['category'])]
+
+    if not 'drop_outliers' in opt:
+        opt['drop_outliers'] = 3
+        
+    if opt['drop_outliers'] > 0:
+        nan_free_idx = np.nonzero(not np.isnan(data['predictor_var']))
+        nan_idx = np.nonzero(np.isnan(data['predictor_var']))
+        nan_free_data = data.loc[nan_free_idx]
+        std_pred = np.std(nan_free_data['predictor_var']) * opt['drop_outliers']
+        mean_pred = np.mean(nan_free_data['predictor_var'])
+        include = np.logical_and(nan_free_data['predictor_var'] > (mean_pred - std_pred), nan_free_data['predictor_var'] < (mean_pred + std_pred))
+        data = pd.concat((nan_free_data, data.loc[nan_idx]))
+        
     return data, opt
     
