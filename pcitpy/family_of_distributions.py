@@ -1,4 +1,4 @@
-import numpy as np
+limport numpy as np
 
 def nans(*args):
     #nan array of arbitrary dimension
