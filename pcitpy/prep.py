@@ -1,4 +1,5 @@
 
+import pandas as pd
 import numpy as np
 import random
 
@@ -149,12 +150,12 @@ def setup(data, opt):
     if not 'bootstrap' in opt:
         opt['bootstrap'] = False
     elif not isinstance(opt['bootstrap'], bool):
-        raise ValueError('Bootstrap field must be boolean.')
+        raise ValueError('bootstrap setting must be boolean.')
 
     if not 'scramble' in opt:
         opt['scramble'] = False
     elif not isinstance(opt['scramble'], bool):
-        raise ValueError('Scramble field must be boolean.')
+        raise ValueError('scramble setting must be boolean.')
 
     if opt['bootstrap'] and opt['scramble']:
         raise ValueError('Cannot run scramble and bootstrap analysis at the same time.')
@@ -169,13 +170,21 @@ def setup(data, opt):
         opt['drop_outliers'] = 3
         
     if opt['drop_outliers'] > 0:
-        nan_free_idx = np.nonzero(not np.isnan(data['predictor_var']))
-        nan_idx = np.nonzero(np.isnan(data['predictor_var']))
+        nan_free_idx = np.nonzero(np.logical_not(np.isnan(data['predictor_var'].values)))
+        nan_idx = np.nonzero(np.isnan(data['predictor_var'].values))
         nan_free_data = data.loc[nan_free_idx]
         std_pred = np.std(nan_free_data['predictor_var']) * opt['drop_outliers']
         mean_pred = np.mean(nan_free_data['predictor_var'])
         include = np.logical_and(nan_free_data['predictor_var'] > (mean_pred - std_pred), nan_free_data['predictor_var'] < (mean_pred + std_pred))
         data = pd.concat((nan_free_data, data.loc[nan_idx]))
-        
+
+    if np.shape(data)[0] == 0:
+        raise ValueError('No trials in input data.')
+
+    if not 'zscore_within_subjects' in opt:
+        opt['zscore_within_subjects'] = 0
+    elif not isinstance(opt['zscore_within_subjects'], bool):
+        raise ValueError('zscore_within_subjects setting must be boolean.')
+
     return data, opt
     
