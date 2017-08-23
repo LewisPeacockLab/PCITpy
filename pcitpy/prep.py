@@ -105,8 +105,13 @@ def prep_bootstrap(data):
         
     return boot_data, boot_subjects
 
-def setup(data, opt):
+def setup(data_in, opt):
 
+    # make a copy of the data, for easy comparison of input data and
+    # output data; could remove this when initial development is
+    # finished
+    data = data_in.copy()
+    
     # TODO: print warnings if options not defined
     if not 'em_iteractions' in opt or opt['em_iterations'] <= 0:
         opt['em_iterations'] = 20
