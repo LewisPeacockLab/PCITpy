@@ -33,19 +33,19 @@
 import sys
 import numpy as np 
 
-def setup(data):
+def scale_data(data,lower=-1,upper=1):
 
-	if len(sys.argv) < 3:
-		lower = -1
-		upper = 1
-	elif lower > upper:
+
+	if lower > upper:
 		print ("Wrong Lower or Upper Values!")
 
-	maxv = np.amax(data)
-	minv = np.amin(data)
+	maxv = np.amax(data,axis=0)
+	minv = np.amin(data,axis=0)
 
 	r,c = data.shape
 
-	scaled = (data - np.ones((r,1), dtype=int) * minv) .* np.ones((r,1), dtype=int) * ((upper - lower) * np.ones((1,c), dtype=int) ./ (maxv - minv))) + lower;
+	scaled = ((data - minv)
+			  *  np.ones((r,1)) * ((upper - lower) / (maxv - minv))
+              + lower)
 
-	return(data,scaled)
+	return scaled
