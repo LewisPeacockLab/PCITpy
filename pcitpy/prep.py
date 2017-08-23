@@ -1,4 +1,7 @@
 
+import numpy as np
+import random
+
 def default_opt():
     opt = {} # Creating a dictionary
     opt['analysis_id'] = 'my_analysis_id' # analysis_id: specifies the target directory
@@ -42,9 +45,6 @@ def scramble_dep_var(dep, clust):
     dep_rand : array
         Array of dependent variables scrambled across clusters.
     """
-    
-    import numpy as np
-    import random
 
     if not dep.shape == clust.shape:
         raise ValueError('Size of input vectors must be the same.')
@@ -61,6 +61,48 @@ def scramble_dep_var(dep, clust):
     for i, c in enumerate(clust_all):
         dep_rand[clust==c] = clust_dep_rand[i]
     return dep_rand
+
+def prep_bootstrap(data):
+    """Create a data set for bootstrap analysis.
+    
+    Parameters
+    ----------
+    data : DataFrame
+        Standard DataFrame with data.
+
+    Returns
+    -------
+    boot_data : DataFrame
+        Data with subjects sampled with replacement.
+    """
+    
+    subjects = np.unique(data['subject_id'])
+    boot_subjects = random.choices(subjects, k=len(subjects))
+    boot_data = data.copy()
+    new_subject_count = 0
+    new_cluster_count = 0
+    for i, subj in enumerate(boot_subjects):
+        new_subject_count += 1
+        subj_ind = np.nonzero(data['subject_id'] == subj)[0]
+        start = (new_subject_count - 1) * len(subj_ind)
+        boot_subj_ind = np.arange(start, start + len(subj_ind))
+
+        # set new subject index
+        subj_clust = data.loc[subj_ind,'net_effect_clusters']
+        boot_data.loc[boot_subj_ind,'subject_id'] = new_subject_count
+        for clust in np.unique(subj_clust):
+            new_cluster_count += 1
+            clust_ind = boot_subj_ind[np.nonzero(subj_clust == clust)[0]]
+            boot_data.loc[clust_ind,'net_effect_clusters'] = new_cluster_count
+        
+        # copy information from the original subject to the bootstrap
+        # subject
+        copy_fields = ['category', 'dependent_var',
+                       'predictor_var', 'trials']
+        for f in copy_fields:
+            boot_data.loc[boot_subj_ind,f] = data.loc[subj_ind,f].values
+        
+    return boot_data, boot_subjects
 
 def setup(data, opt):
 
