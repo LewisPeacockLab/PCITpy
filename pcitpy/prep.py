@@ -27,6 +27,41 @@ def default_opt():
     opt['scramble_style'] = -1 # choosing the appropriate scramble option from three options below
     return opt
 
+def scramble_dep_var(dep, clust):
+    """Scramble dependent variable across clusters.
+    
+    Parameters
+    ----------
+    dep : array_like
+        Array of dependent variables.
+    clust : array_like
+        Array of cluster labels.
+
+    Returns
+    -------
+    dep_rand : array
+        Array of dependent variables scrambled across clusters.
+    """
+    
+    import numpy as np
+    import random
+
+    if not dep.shape == clust.shape:
+        raise ValueError('Size of input vectors must be the same.')
+
+    # get all clusters and corresponding dependent variables
+    clust_all = np.unique(clust)
+    clust_dep = [dep[clust==i][0] for i in clust_all]
+
+    # randomize across clusters
+    clust_dep_rand = random.sample(clust_dep, len(clust_dep))
+
+    # assign randomized dependent variables to sorted cluster vector
+    dep_rand = np.zeros(np.shape(dep))
+    for i, c in enumerate(clust_all):
+        dep_rand[clust==c] = clust_dep_rand[i]
+    return dep_rand
+
 def setup(data, opt):
 
     if not 'em_iteractions' in opt or opt['em_iterations'] <= 0:
