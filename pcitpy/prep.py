@@ -76,13 +76,17 @@ def prep_bootstrap(data):
     boot_data : DataFrame
         Data with subjects sampled with replacement.
     """
-    
-    subjects = np.unique(data['subject_id'])
+
+    # randomly sample subjects with replacement
+    subjects = data['subject_id'].unique()
     boot_subjects = random.choices(subjects, k=len(subjects))
+
+    # copy so the original data will not be modified
     boot_data = data.copy()
     new_subject_count = 0
     new_cluster_count = 0
     for i, subj in enumerate(boot_subjects):
+        # source subject indices and boot subject indices
         new_subject_count += 1
         subj_ind = np.nonzero(data['subject_id'] == subj)[0]
         start = (new_subject_count - 1) * len(subj_ind)
@@ -100,8 +104,7 @@ def prep_bootstrap(data):
         # subject
         copy_fields = ['category', 'dependent_var',
                        'predictor_var', 'trials']
-        for f in copy_fields:
-            boot_data.loc[boot_subj_ind,f] = data.loc[subj_ind,f].values
+        boot_data.loc[boot_subj_ind,copy_fields] = data.loc[boot_subj_ind,copy_fields].values
         
     return boot_data, boot_subjects
 
