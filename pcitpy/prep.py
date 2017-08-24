@@ -197,6 +197,15 @@ def setup(data_in, opt):
     if opt['zscore_within_subjects']:
         pred = data.loc[:,'predictor_var']
         data.loc[:,'predictor_var'] = (pred - pred.mean()) / pred.std()
+
+    if not 'resolution' in opt:
+        opt['resolution'] = 4
+
+    if opt['distribution'] == 'normal':
+        # If normally distributed data, want to z-score the dependent
+        # variable
+        dep = data.loc[:,'dependent_var']
+        data.loc[:,'dependent_var'] = (dep - dep.mean()) / dep.std()
     
     return data, opt
     
