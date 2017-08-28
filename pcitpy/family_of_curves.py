@@ -1,4 +1,4 @@
-def family_of_curves(curve_type, info, *args)
+def family_of_curves(curve_type, info, *args):
 # Input
 # 
 # --curve_type: Family of curves, string, e.g. 'horz_indpnt'
@@ -9,10 +9,10 @@ def family_of_curves(curve_type, info, *args)
 # 
 # --output: Holds the output of all computations
 
-    if len(args) < 2:o
+    if len(args) < 2:
         raise ValueError('missing input parameters')
 
-    if curve_type == 'horz_indpnt'
+    if curve_type == 'horz_indpnt':
         output = horz_indpnt_curve(info, args)
     else:
         raise ValueError('invalid curve')
@@ -95,11 +95,12 @@ def horz_indpnt_curve(info, input_params):
                     # Intercept (Boundary condition)
 
                     ind0 = ~ind3 & ~ind2 & ~ind1 & data[cluster[j], predictor_var_col] == 0 
-                    X[j, ind0 = y1[ind0]
+                    X[j, ind0] = y1[ind0]
 
                     # If an item has net effects then taking the sum below will compute the net effects.
                     # If an item has no net effect then this loop will be executed only once and the sum has no effect
                     x[i, :] = np.sum(X, axis = 0)
+
             # Our model enforces that the dependent variable will need to be unique 
             # for items within a net effect cluster i.e. all 1's or all 0's
 
@@ -121,4 +122,26 @@ def horz_indpnt_curve(info, input_params):
         out['dependent_var'] = y
 
     elif info == 'count_particles':
+        #Use some criterion to carve out the curve space into theory consistent and theory inconsistent
+        if len(input_params) < 1:
+            raise ValueError('missing input parameters')
+
+        if not all(input_params[0][:,2] <= input_params[0][: ,3]):
+            raise ValueError('horizontal param 1 not <= horizontal param 2')
+
+            #matlab version has a bunch of manual rules
+
+    elif info == 'get_curve_xy_vals':
+        if len(input_params) < 1:
+            raise ValueError('missing input parameters')
+
+        if len(input_params) > 1:
+            resolution = input_params[1]
+        else:
+            resolution = 4
+
+        particles = input_params[1][:, 1]
+
+
+
     else:

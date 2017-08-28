@@ -1,4 +1,8 @@
 
+import pandas as pd
+import numpy as np
+import random
+
 def default_opt():
     opt = {} # Creating a dictionary
     opt['analysis_id'] = 'my_analysis_id' # analysis_id: specifies the target directory
@@ -42,9 +46,6 @@ def scramble_dep_var(dep, clust):
     dep_rand : array
         Array of dependent variables scrambled across clusters.
     """
-    
-    import numpy as np
-    import random
 
     if not dep.shape == clust.shape:
         raise ValueError('Size of input vectors must be the same.')
@@ -62,8 +63,59 @@ def scramble_dep_var(dep, clust):
         dep_rand[clust==c] = clust_dep_rand[i]
     return dep_rand
 
-def setup(data, opt):
+def prep_bootstrap(data):
+    """Create a data set for bootstrap analysis.
+    
+    Parameters
+    ----------
+    data : DataFrame
+        Standard DataFrame with data.
 
+    Returns
+    -------
+    boot_data : DataFrame
+        Data with subjects sampled with replacement.
+    """
+
+    # randomly sample subjects with replacement
+    subjects = data['subject_id'].unique()
+    boot_subjects = random.choices(subjects, k=len(subjects))
+
+    # copy so the original data will not be modified
+    boot_data = data.copy()
+    new_subject_count = 0
+    new_cluster_count = 0
+    for i, subj in enumerate(boot_subjects):
+        # source subject indices and boot subject indices
+        new_subject_count += 1
+        subj_ind = np.nonzero(data['subject_id'] == subj)[0]
+        start = (new_subject_count - 1) * len(subj_ind)
+        boot_subj_ind = np.arange(start, start + len(subj_ind))
+
+        # set new subject index
+        subj_clust = data.loc[subj_ind,'net_effect_clusters']
+        boot_data.loc[boot_subj_ind,'subject_id'] = new_subject_count
+        for clust in np.unique(subj_clust):
+            new_cluster_count += 1
+            clust_ind = boot_subj_ind[np.nonzero(subj_clust == clust)[0]]
+            boot_data.loc[clust_ind,'net_effect_clusters'] = new_cluster_count
+        
+        # copy information from the original subject to the bootstrap
+        # subject
+        copy_fields = ['category', 'dependent_var',
+                       'predictor_var', 'trials']
+        boot_data.loc[boot_subj_ind,copy_fields] = data.loc[boot_subj_ind,copy_fields].values
+        
+    return boot_data, boot_subjects
+
+def setup(data_in, opt):
+
+    # make a copy of the data, for easy comparison of input data and
+    # output data; could remove this when initial development is
+    # finished
+    data = data_in.copy()
+    
+    # TODO: print warnings if options not defined
     if not 'em_iteractions' in opt or opt['em_iterations'] <= 0:
         opt['em_iterations'] = 20
         
@@ -83,15 +135,15 @@ def setup(data, opt):
             opt['distribution'] = 'normal'
 
     if not 'dist_specific_params' in opt or not opt['dist_specific_params']:
-        if opt['distribution'] is 'bernoulli':
+        if opt['distribution'] == 'bernoulli':
             opt['dist_specific_params'] = {}
-        elif opt['distribution'] is 'normal':
+        elif opt['distribution'] == 'normal':
             dpar = {}
             dpar['sigma'] = 1
             opt['dist_specific_params'] = dpar
         # original code had prompt at this point to check for parameters
 
-    if opt['distribution'] is 'normal' and opt['dist_specific_params']['sigma'] <= 0:
+    if opt['distribution'] == 'normal' and opt['dist_specific_params']['sigma'] <= 0:
         raise ValueError('Normal distribution sigma must be greater than 0.')
 
     if not 'beta_0' in opt:
@@ -106,15 +158,54 @@ def setup(data, opt):
     if not 'bootstrap' in opt:
         opt['bootstrap'] = False
     elif not isinstance(opt['bootstrap'], bool):
-        raise ValueError('Bootstrap field must be boolean.')
+        raise ValueError('bootstrap setting must be boolean.')
 
     if not 'scramble' in opt:
         opt['scramble'] = False
     elif not isinstance(opt['scramble'], bool):
-        raise ValueError('Scramble field must be boolean.')
+        raise ValueError('scramble setting must be boolean.')
 
     if opt['bootstrap'] and opt['scramble']:
         raise ValueError('Cannot run scramble and bootstrap analysis at the same time.')
+
+    # get only categories of interest
+    if not 'category' in opt:
+        opt['category'] = None
+    elif opt['category'] is not None:
+        data = data.loc[np.in1d(data['category'].values, opt['category'])]
+
+    if not 'drop_outliers' in opt:
+        opt['drop_outliers'] = 3
+        
+    if opt['drop_outliers'] > 0:
+        nan_free_idx = np.nonzero(np.logical_not(np.isnan(data['predictor_var'].values)))
+        nan_idx = np.nonzero(np.isnan(data['predictor_var'].values))
+        nan_free_data = data.loc[nan_free_idx]
+        std_pred = np.std(nan_free_data['predictor_var']) * opt['drop_outliers']
+        mean_pred = np.mean(nan_free_data['predictor_var'])
+        include = np.logical_and(nan_free_data['predictor_var'] > (mean_pred - std_pred), nan_free_data['predictor_var'] < (mean_pred + std_pred))
+        data = pd.concat((nan_free_data, data.loc[nan_idx]))
+
+    if np.shape(data)[0] == 0:
+        raise ValueError('No trials in input data.')
+
+    if not 'zscore_within_subjects' in opt:
+        opt['zscore_within_subjects'] = 0
+    elif not isinstance(opt['zscore_within_subjects'], bool):
+        raise ValueError('zscore_within_subjects setting must be boolean.')
+    
+    if opt['zscore_within_subjects']:
+        pred = data.loc[:,'predictor_var']
+        data.loc[:,'predictor_var'] = (pred - pred.mean()) / pred.std()
+
+    if not 'resolution' in opt:
+        opt['resolution'] = 4
+
+    if opt['distribution'] == 'normal':
+        # If normally distributed data, want to z-score the dependent
+        # variable
+        dep = data.loc[:,'dependent_var']
+        data.loc[:,'dependent_var'] = (dep - dep.mean()) / dep.std()
     
     return data, opt
     
