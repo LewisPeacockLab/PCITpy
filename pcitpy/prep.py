@@ -206,6 +206,21 @@ def setup(data_in, opt):
         # variable
         dep = data.loc[:,'dependent_var']
         data.loc[:,'dependent_var'] = (dep - dep.mean()) / dep.std()
-    
+
+    # scale predictor between 0 and 1
+    pred = data.loc[:,'predictor_var']
+    data.loc[:,'predictor_var'] = (pred - pred.min()) / (pred.max() - pred.min())
+
+    # set predictor resolution
+    data.loc[:,'predictor_var'] = np.round(pred, opt['resolution'])
+
+    if opt['scramble'] and not opt['bootstrap']:
+        if not 'scramble_run' in opt:
+            raise IOError('scramble_run not set.')
+        if not 'scramble_style' in opt:
+            opt['scramble_style'] = 'within_subjects_within_categories'
+
+        subjects = data.loc[:,'subject_id'].unique()
+            
     return data, opt
     
