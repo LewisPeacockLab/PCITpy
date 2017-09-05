@@ -52,6 +52,7 @@ def scramble_dep_var(dep, clust):
 
     # get all clusters and corresponding dependent variables
     clust_all = np.unique(clust)
+    dep = np.asarray(dep)
     clust_dep = [dep[clust==i][0] for i in clust_all]
 
     # randomize across clusters
@@ -108,8 +109,68 @@ def prep_bootstrap(data):
         
     return boot_data, boot_subjects
 
-def setup(data_in, opt):
+def prep_scramble(data, scramble):
+    """Create scrambled data set.
+    
+    Parameters
+    ----------
+    data : DataFrame
+        Standard DataFrame with data.
+    scramble : str
+        Type of scrambling to use:
+            'within_subjects_within_categories'
+            'within_subjects_across_categories'
+            'across_subjects_across_categories'
+    
+    Returns
+    -------
+    scramble_data : DataFrame
+        Scrambled data.
 
+    """
+    
+    scramble_data = data.copy()
+    dep = data['dependent_var']
+    clust = data['net_effect_clusters']
+    if scramble == 'within_subjects_within_categories':
+        for subject in data['subject_id'].unique():
+            for category in data['category'].unique():
+                ind = np.logical_and(data['subject_id'] == subject,
+                                     data['category'] == category)
+                scramble_data.loc[ind,'dependent_var'] = scramble_dep_var(dep[ind],
+                                                                          clust[ind])
+
+    elif scramble == 'within_subjects_across_categories':
+        for subject in data['subject_id'].unique():
+            ind = data['subject_id'] == subject
+            scramble_data.loc[ind,'dependent_var'] = scramble_dep_var(dep[ind],
+                                                                      clust[ind])
+
+    elif scramble == 'across_subjects_across_categories':
+        scramble_data['dependent_var'] = scramble_dep_var(dep, clust)
+
+    else:
+        raise ValueError('Invalid scramble style: {}'.format(scramble))
+    return scramble_data
+
+def setup(data_in, opt):
+    """Run basic setup of data and analysis settings.
+
+    Parameters
+    ----------
+    data_in : DataFrame
+        Input DataFrame with all data.
+    opt : dict
+        Dictionary with analysis settings.
+    
+    Returns
+    -------
+    data_in : DataFrame
+        Output DataFrame with bootstrap sampling and scrambling applied.
+    opt : dict
+        Dictionary with updated analysis settings.
+    """    
+    
     # make a copy of the data, for easy comparison of input data and
     # output data; could remove this when initial development is
     # finished
@@ -208,11 +269,11 @@ def setup(data_in, opt):
         data.loc[:,'dependent_var'] = (dep - dep.mean()) / dep.std()
 
     # scale predictor between 0 and 1
-    pred = data.loc[:,'predictor_var']
-    data.loc[:,'predictor_var'] = (pred - pred.min()) / (pred.max() - pred.min())
+    pred = data['predictor_var']
+    data['predictor_var'] = (pred - pred.min()) / (pred.max() - pred.min())
 
     # set predictor resolution
-    data.loc[:,'predictor_var'] = np.round(pred, opt['resolution'])
+    data['predictor_var'] = np.round(pred, opt['resolution'])
 
     if opt['scramble'] and not opt['bootstrap']:
         if not 'scramble_run' in opt:
@@ -220,7 +281,7 @@ def setup(data_in, opt):
         if not 'scramble_style' in opt:
             opt['scramble_style'] = 'within_subjects_within_categories'
 
-        subjects = data.loc[:,'subject_id'].unique()
+        data = prep_scramble(data, opt['scramble_style'])
             
     return data, opt
     
