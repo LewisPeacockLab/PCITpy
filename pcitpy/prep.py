@@ -1,3 +1,4 @@
+"""Functions for preparing P-CIT analysis."""
 
 import pandas as pd
 import numpy as np
