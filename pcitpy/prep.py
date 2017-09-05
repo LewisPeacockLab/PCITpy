@@ -237,14 +237,13 @@ def setup(data_in, opt):
     if not 'drop_outliers' in opt:
         opt['drop_outliers'] = 3
         
-    if opt['drop_outliers'] > 0:
-        nan_free_idx = np.nonzero(np.logical_not(np.isnan(data['predictor_var'].values)))
-        nan_idx = np.nonzero(np.isnan(data['predictor_var'].values))
-        nan_free_data = data.loc[nan_free_idx]
-        std_pred = np.std(nan_free_data['predictor_var']) * opt['drop_outliers']
-        mean_pred = np.mean(nan_free_data['predictor_var'])
-        include = np.logical_and(nan_free_data['predictor_var'] > (mean_pred - std_pred), nan_free_data['predictor_var'] < (mean_pred + std_pred))
-        data = pd.concat((nan_free_data, data.loc[nan_idx]))
+    if opt['drop_outliers'] is not None:
+        pred = data['predictor_var']
+        pred_std = pred.std()
+        pred_mean = pred.mean()
+        lower = pred_mean - (pred_std * opt['drop_outliers'])
+        upper = pred_mean + (pred_std * opt['drop_outliers'])
+        data = data.loc[pred.between(lower, upper),:]
 
     if np.shape(data)[0] == 0:
         raise ValueError('No trials in input data.')
@@ -255,8 +254,8 @@ def setup(data_in, opt):
         raise ValueError('zscore_within_subjects setting must be boolean.')
     
     if opt['zscore_within_subjects']:
-        pred = data.loc[:,'predictor_var']
-        data.loc[:,'predictor_var'] = (pred - pred.mean()) / pred.std()
+        pred = data['predictor_var']
+        data['predictor_var'] = (pred - pred.mean()) / pred.std()
 
     if not 'resolution' in opt:
         opt['resolution'] = 4
@@ -264,15 +263,15 @@ def setup(data_in, opt):
     if opt['distribution'] == 'normal':
         # If normally distributed data, want to z-score the dependent
         # variable
-        dep = data.loc[:,'dependent_var']
-        data.loc[:,'dependent_var'] = (dep - dep.mean()) / dep.std()
+        dep = data['dependent_var']
+        data['dependent_var'] = (dep - dep.mean()) / dep.std()
 
     # scale predictor between 0 and 1
     pred = data['predictor_var']
     data['predictor_var'] = (pred - pred.min()) / (pred.max() - pred.min())
 
     # set predictor resolution
-    data['predictor_var'] = np.round(pred, opt['resolution'])
+    data['predictor_var'] = np.round(data['predictor_var'], opt['resolution'])
 
     if opt['scramble'] and not opt['bootstrap']:
         if not 'scramble_run' in opt:
