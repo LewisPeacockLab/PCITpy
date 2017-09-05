@@ -281,6 +281,17 @@ def setup(data_in, opt):
             opt['scramble_style'] = 'within_subjects_within_categories'
 
         data = prep_scramble(data, opt['scramble_style'])
-            
+
+    # verify that the subject ID and dependent variable are unique
+    # within each cluster
+    uclusters = data['net_effect_clusters'].unique()
+    if len(uclusters) < data.shape[0]:
+        for cluster in uclusters:
+            ind = data['net_effect_clusters'] == cluster
+            if len(data.loc[ind,'subject_id'].unique()) > 1:
+                raise ValueError('Subject ID is not unique for all net effect clusters.')
+            if len(data.loc[ind,'dependent_var'].unique()) > 1:
+                raise ValueError('Dependent variable is not unique for all net effect clusters.')
+    
     return data, opt
     
