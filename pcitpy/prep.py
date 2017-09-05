@@ -24,11 +24,11 @@ def default_opt():
     opt['particle_chunks'] = 2 # Denotes the number of chunks you plan to partition the trials x particles matrix. An example chunk size will be 2 for a 3000 x 50,000 matrix
 
     opt['bootstrap'] = False # indicates that this run is a bootstrap run
-    opt['bootstrap_run'] = -1 # will need to specify a bootstrap sample number. This will need to be unique for each sample
+    opt['bootstrap_run'] = None # will need to specify a bootstrap sample number. This will need to be unique for each sample
 
     opt['scramble'] = False # indicates that this run is a scramble run
-    opt['scramble_run'] = -1 # will need to specify a scramble sample number. This will need to be unique for each sample
-    opt['scramble_style'] = -1 # choosing the appropriate scramble option from three options below
+    opt['scramble_run'] = None # will need to specify a scramble sample number. This will need to be unique for each sample
+    opt['scramble_style'] = None # choosing the appropriate scramble option from three options below
     return opt
 
 def scramble_dep_var(dep, clust):
