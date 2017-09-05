@@ -124,12 +124,11 @@ def prep_scramble(data, scramble):
     
     Returns
     -------
-    scramble_data : DataFrame
+    sdata : DataFrame
         Scrambled data.
-
     """
     
-    scramble_data = data.copy()
+    sdata = data.copy()
     dep = data['dependent_var']
     clust = data['net_effect_clusters']
     if scramble == 'within_subjects_within_categories':
@@ -137,21 +136,21 @@ def prep_scramble(data, scramble):
             for category in data['category'].unique():
                 ind = np.logical_and(data['subject_id'] == subject,
                                      data['category'] == category)
-                scramble_data.loc[ind,'dependent_var'] = scramble_dep_var(dep[ind],
-                                                                          clust[ind])
+                sdata.loc[ind,'dependent_var'] = scramble_dep_var(dep[ind],
+                                                                  clust[ind])
 
     elif scramble == 'within_subjects_across_categories':
         for subject in data['subject_id'].unique():
             ind = data['subject_id'] == subject
-            scramble_data.loc[ind,'dependent_var'] = scramble_dep_var(dep[ind],
-                                                                      clust[ind])
+            sdata.loc[ind,'dependent_var'] = scramble_dep_var(dep[ind],
+                                                              clust[ind])
 
     elif scramble == 'across_subjects_across_categories':
-        scramble_data['dependent_var'] = scramble_dep_var(dep, clust)
+        sdata['dependent_var'] = scramble_dep_var(dep, clust)
 
     else:
         raise ValueError('Invalid scramble style: {}'.format(scramble))
-    return scramble_data
+    return sdata
 
 def setup(data_in, opt):
     """Run basic setup of data and analysis settings.
